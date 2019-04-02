@@ -1,0 +1,19 @@
+{
+  "name": "loonacoin",
+  "version": "1.0.0",
+  "description": "This project is Bitcoin Clone Project with Node.js",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zerobell-lee/loonacoin.git"
+  },
+  "author": "zerobell-lee",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zerobell-lee/loonacoin/issues"
+  },
+  "homepage": "https://github.com/zerobell-lee/loonacoin#readme"
+}
