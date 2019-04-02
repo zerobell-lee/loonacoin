@@ -36,6 +36,8 @@ const createNewBlock = data => {
 
     const newBlock = new Block(newBlockIndex, newHash, previousBlock.hash, newTimeStamp, data);
 
+    addBlockToChain(newBlock);
+    
     return newBlock;
 }
 
