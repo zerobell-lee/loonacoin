@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/zerobell-lee/loonacoin/issues"
   },
-  "homepage": "https://github.com/zerobell-lee/loonacoin#readme"
+  "homepage": "https://github.com/zerobell-lee/loonacoin#readme",
+  "dependencies": {
+    "crypto-js": "^3.1.9-1"
+  }
 }
