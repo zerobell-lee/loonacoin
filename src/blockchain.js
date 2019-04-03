@@ -37,6 +37,8 @@ const createNewBlock = data => {
     const newBlock = new Block(newBlockIndex, newHash, previousBlock.hash, newTimeStamp, data);
 
     addBlockToChain(newBlock);
+
+    require('./p2p').broadcastNewBlock();
     
     return newBlock;
 }
