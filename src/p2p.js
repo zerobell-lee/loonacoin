@@ -3,7 +3,7 @@ const WebSockets = require('ws'),
 
 const sockets = [];
 
-const { getNewestBlock, isBlockStructureValid, isBlockValid, addBlockToChain, replaceChain } = Blockchain;
+const { getNewestBlock, isBlockStructureValid, isBlockValid, addBlockToChain, replaceChain, getBlockChain } = Blockchain;
 
 // Message Creators
 
@@ -40,8 +40,8 @@ const getSockets = () => sockets;
 const startP2Pserver = server => {
     const wsServer = new WebSockets.Server({server});
     wsServer.on('connection', ws => {
-        initSocketConnection(ws);
-    })
+        initSocketConnection(ws); //새로운 소켓 커넥션이 감지되면, 이를 초기화하는 과정을 거친다.
+    }) //각 서버는 webSocket Server가 된다.
     console.log('Loona Coin P2P Server Running!');
 };
 
@@ -49,7 +49,7 @@ const initSocketConnection = ws => {
     sockets.push(ws);
     handleSocketMessage(ws);
     handleSockerError(ws);
-    sendMessage(ws, getLatest());  
+    sendMessage(ws, getLatest());  //메시지, 에러에 관한 부분을 대충 끝내고, 최신 노드를 물어본다.
 };
 
 const parseData = data => {
@@ -71,6 +71,9 @@ const handleSocketMessage = ws => {
             case GET_LATEST:
                 sendMessage(ws, responseLatest());
                 break;
+            case GET_ALL:
+                sendMessage(ws, responseAll());
+                break;
             case BLOCKCHAIN_RESPONSE:
                 const receivedBlocks = message.data
                 if (receivedBlocks === null) {
@@ -80,6 +83,8 @@ const handleSocketMessage = ws => {
                 handleBlockchainResponse(receivedBlocks);
 
                 break;
+            
+
         }
     });
 };
@@ -89,6 +94,9 @@ const handleBlockchainResponse = receivedBlocks => {
         console.log("Received Empty Block.");
         return;
     }
+
+    console.log(receivedBlocks);
+
     const latestBlockReceived = receivedBlocks[receivedBlocks.length - 1]; // latest block이라 해도 복수의 블록을 보낼 수 있음.
 
     if (!isBlockStructureValid(latestBlockReceived)) {
@@ -102,7 +110,7 @@ const handleBlockchainResponse = receivedBlocks => {
         if (newestBlock.hash === latestBlockReceived.previousHash) {
             addBlockToChain(latestBlockReceived);
         } else if (receivedBlocks.length === 1) {
-            // to do, get all the blocks
+            sendMessageToAll(getAll());
         } else {
             replaceChain(receivedBlocks);
         }
@@ -113,7 +121,11 @@ const handleBlockchainResponse = receivedBlocks => {
 
 const sendMessage = (ws, message) => ws.send(JSON.stringify(message));
 
+const sendMessageToAll = message => sockets.forEach(ws => sendMessage(ws, message));
+
 const responseLatest = () => blockchainResponse([getNewestBlock()])
+
+const responseAll = () => blockchainResponse(getBlockChain());
 
 const handleSockerError = ws => {
     const closeSocketConnection = ws => {

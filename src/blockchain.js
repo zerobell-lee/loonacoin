@@ -14,7 +14,7 @@ const genesisBlock = new Block(
     0,
     "2AFDJFKJDLKDJKLFJKLDJKLJ",
     null,
-    new Date().getTime() / 1000,
+    23423534.023,
     "This is the genesis!!"
 );
 
@@ -82,7 +82,7 @@ const isChainValid = (candidateChain) => {
     }
 
     for (let i = 1; i < candidateChain.length; i++) {
-        if (isBlockValid(candidateChain[i], candidateChain[i-1])) {
+        if (!isBlockValid(candidateChain[i], candidateChain[i-1])) {
             return false;
         }
     }
