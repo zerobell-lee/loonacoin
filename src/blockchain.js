@@ -1,6 +1,9 @@
 const CryptoJS = require('crypto-js'),
     hexToBinary = require('hex-to-binary');
 
+const BLOCK_GENERATIONAL_INTERVAL = 10; // 초단위. 블록 채굴에 걸리는 시간.
+const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // 비트코인일 경우, 2016개
+
 class Block {
     constructor(index, hash, previousHash, timestamp, data, difficulty, nonce) {
         this.index = index;
@@ -17,16 +20,16 @@ const genesisBlock = new Block(
     0,
     "2AFDJFKJDLKDJKLFJKLDJKLJ",
     null,
-    23423534.023,
+    1520408045,
     "This is the genesis!!",
-    0,
+    10,
     0
 );
 
 let blockchain = [genesisBlock];
 
 const getNewestBlock = () => blockchain[blockchain.length - 1];
-const getTimeStamp = () => new Date().getTime() / 1000;
+const getTimeStamp = () => Math.round(new Date().getTime() / 1000);
 const getBlockChain = () => blockchain;
 
 const createHash = (index, previousHash, timestamp, data, difficulty, nonce) => {
@@ -37,15 +40,41 @@ const createNewBlock = data => {
     const previousBlock = getNewestBlock();
     const newBlockIndex = previousBlock.index + 1;
     const newTimeStamp = getTimeStamp();
-    const newHash = createHash(newBlockIndex, previousBlock.hash, newTimeStamp, data);
+    const difficulty = findDifficulty();
 
-    const newBlock = findBlock(newBlockIndex, previousBlock.hash, newTimeStamp, data, 5);
+    const newBlock = findBlock(newBlockIndex, previousBlock.hash, newTimeStamp, data, difficulty);
 
     addBlockToChain(newBlock);
 
     require('./p2p').broadcastNewBlock();
     
     return newBlock;
+}
+
+const findDifficulty = () => {
+    const newestBlock = getNewestBlock();
+
+    if (newestBlock.index % DIFFICULTY_ADJUSTMENT_INTERVAL === 0 && newestBlock.index !== 0) {
+        return calculateNewDifficulty(newestBlock, getBlockChain())
+    } else {
+        return newestBlock.difficulty;
+    }
+
+}
+
+const calculateNewDifficulty = (newestBlock, blockchain) => {
+    const lastCalculatedBlock = blockchain[blockchain.length - DIFFICULTY_ADJUSTMENT_INTERVAL];
+    const timeExpected = BLOCK_GENERATIONAL_INTERVAL * DIFFICULTY_ADJUSTMENT_INTERVAL;
+    const timeTaken = newestBlock.timestamp - lastCalculatedBlock.timestamp;
+
+    if (timeTaken < timeExpected/2) {
+        return lastCalculatedBlock.difficulty + 1;
+    } else if (timeTaken > timeExpected * 2) {
+        return lastCalculatedBlock.difficulty - 1; //만일 difficulty가 음수가 되는 경우가 생긴다면?
+    } else {
+        return lastCalculatedBlock.difficulty;
+    }
+
 }
 
 const findBlock = (index, previousHash, timestamp, data, difficulty) => {
@@ -76,6 +105,10 @@ const hashMatchesDifficulty = (hash, difficulty) => {
 
 const getBlockHash = (block) => createHash(block.index, block.previousHash, block.timestamp, block.data, block.difficulty, block.nonce);
 
+const isTimeStampValid = (newBlock, oldBlock) => {
+    return (oldBlock.timestamp - 60 < newBlock.timestamp && newBlock.timestamp - 60 < getTimeStamp());
+}
+
 const isBlockValid = (candidate, latest) => {
     if (!isBlockStructureValid(candidate)) {
         console.log('The structure of the candidate block is invalid.');
@@ -90,6 +123,9 @@ const isBlockValid = (candidate, latest) => {
     } else if (getBlockHash(candidate) !== candidate.hash) {
         console.log('The hash of the candidate is invalid.');
         return false;
+    } else if (!isTimeStampValid(candidate, latest)) {
+        console.log('The timestamp of this block is dodgy.');
+        return false;
     }
     return true;
 }
@@ -100,7 +136,9 @@ const isBlockStructureValid = (block) => {
         typeof block.hash === 'string' &&
         typeof block.previousHash === 'string' &&
         typeof block.timestamp === 'number' &&
-        typeof block.data === 'string'
+        typeof block.data === 'string' &&
+        typeof block.difficulty === 'number' &&
+        typeof block.nonce === 'number'
     )
 }
 
@@ -123,8 +161,14 @@ const isChainValid = (candidateChain) => {
     return true;
 }; //모두 하나의 제네시스를 공유해야한다. 그리고, 하나의 제네시스 블록에서 서로 다른 체인을 만드는 것도 가능하다. 다양한 거래 생성이 가능하단 소리!
 
+const sumDifficulty = anyBlockchain => 
+    anyBlockchain.map(block => Math.pow(2, block.difficulty))
+    .reduce((a, b) => a + b);
+
 const replaceChain = candidateChain => {
-    if (isChainValid(candidateChain) && candidateChain.length > getBlockChain().length) {
+    if (isChainValid(candidateChain) && 
+        sumDifficulty(candidateChain) > sumDifficulty(getBlockChain())) 
+    {
         blockchain = candidateChain;
         return true;
     } else {
