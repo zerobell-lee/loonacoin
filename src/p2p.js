@@ -8,13 +8,16 @@ const getSockets = () => sockets;
 const startP2Pserver = server => {
     const wsServer = new WebSockets.Server({server});
     wsServer.on('connection', ws => {
-        console.log(`Hello Socket`);
+        initSocketConnection(ws);
     })
     console.log('Loona Coin P2P Server Running!');
 };
 
 const initSocketConnection = socket => {
     sockets.push(socket);
+    socket.on('message', (data) => {
+        console.log(data);
+    });
 }
 
 const connectToPeers = newPeer => {
