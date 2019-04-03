@@ -20,7 +20,7 @@ const genesisBlock = new Block(
 
 let blockchain = [genesisBlock];
 
-const getLastBlock = () => blockchain[blockchain.length - 1];
+const getNewestBlock = () => blockchain[blockchain.length - 1];
 const getTimeStamp = () => new Date().getTime() / 1000;
 const getBlockChain = () => blockchain;
 
@@ -29,7 +29,7 @@ const createHash = (index, previousHash, timestamp, data) => {
 }
 
 const createNewBlock = data => {
-    const previousBlock = getLastBlock();
+    const previousBlock = getNewestBlock();
     const newBlockIndex = previousBlock.index + 1;
     const newTimeStamp = getTimeStamp();
     const newHash = createHash(newBlockIndex, previousBlock.hash, newTimeStamp, data);
@@ -43,8 +43,8 @@ const createNewBlock = data => {
 
 const getBlockHash = (block) => createHash(block.index, block.previousHash, block.timestamp, block.data);
 
-const isNewBlockValid = (candidate, latest) => {
-    if (!isNewStructureValid(candidate)) {
+const isBlockValid = (candidate, latest) => {
+    if (!isBlockStructureValid(candidate)) {
         console.log('The structure of the candidate block is invalid.');
         return false;
     }
@@ -61,7 +61,7 @@ const isNewBlockValid = (candidate, latest) => {
     return true;
 }
 
-const isNewStructureValid = (block) => {
+const isBlockStructureValid = (block) => {
     return (
         typeof block.index === 'number' &&
         typeof block.hash === 'string' &&
@@ -82,7 +82,7 @@ const isChainValid = (candidateChain) => {
     }
 
     for (let i = 1; i < candidateChain.length; i++) {
-        if (isNewBlockValid(candidateChain[i], candidateChain[i-1])) {
+        if (isBlockValid(candidateChain[i], candidateChain[i-1])) {
             return false;
         }
     }
@@ -100,7 +100,7 @@ const replaceChain = candidateChain => {
 };
 
 const addBlockToChain = candidate => {
-    if (isNewBlockValid(candidate, getLastBlock())) {
+    if (isBlockValid(candidate, getNewestBlock())) {
         getBlockChain().push(candidate);
         return true;
     } else {
@@ -109,6 +109,11 @@ const addBlockToChain = candidate => {
 }
 
 module.exports = {
+    getNewestBlock,
     getBlockChain,
-    createNewBlock
+    createNewBlock,
+    isBlockStructureValid,
+    isBlockValid,
+    addBlockToChain,
+    replaceChain
 }
