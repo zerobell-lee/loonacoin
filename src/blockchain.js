@@ -1,10 +1,13 @@
 const CryptoJS = require('crypto-js'),
+    _ = require('lodash'),
     Wallet = require('./wallet'),
-    Transaction = require('./transactions')
+    Transaction = require('./transactions'),
+    Mempool = require('./mempool'),
     hexToBinary = require('hex-to-binary');
 
-const { getBalance, getPublicFromWallet } = Wallet;
+const { getBalance, getPublicFromWallet, createTx, getPrivateFromWallet } = Wallet;
 const { createCoinbaseTx, processTxs } = Transaction;
+const { addToMempool} = Mempool;
 
 const BLOCK_GENERATIONAL_INTERVAL = 10; // 초단위. 블록 채굴에 걸리는 시간.
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // 비트코인일 경우, 2016개
@@ -208,7 +211,14 @@ const addBlockToChain = candidate => {
     }
 }
 
+const getUTxOutList = () => _.cloneDeep(uTxOuts);
+
 const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
+
+const sendTx = (address, amount) => {
+    const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList());
+    addToMempool(tx, getUTxOutList());
+}
 
 module.exports = {
     getNewestBlock,
