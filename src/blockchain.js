@@ -1,8 +1,10 @@
 const CryptoJS = require('crypto-js'),
     Wallet = require('./wallet'),
+    Transaction = require('./transactions')
     hexToBinary = require('hex-to-binary');
 
 const { getBalance, getPublicFromWallet } = Wallet;
+const { createCoinbaseTx } = Transaction;
 
 const BLOCK_GENERATIONAL_INTERVAL = 10; // 초단위. 블록 채굴에 걸리는 시간.
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // 비트코인일 경우, 2016개
@@ -41,7 +43,13 @@ const createHash = (index, previousHash, timestamp, data, difficulty, nonce) => 
     return CryptoJS.SHA256(index + previousHash + timestamp + JSON.stringify(data) + difficulty + nonce).toString();
 }
 
-const createNewBlock = data => {
+const createNewBlock = () => {
+    const coinbaseTx = createCoinbaseTx(getPublicFromWallet(), getNewestBlock().index + 1);
+    const blockData = [coinbaseTx];
+    return createNewRawBlock(blockData);
+}
+
+const createNewRawBlock = data => {
     const previousBlock = getNewestBlock();
     const newBlockIndex = previousBlock.index + 1;
     const newTimeStamp = getTimeStamp();
@@ -141,7 +149,7 @@ const isBlockStructureValid = (block) => {
         typeof block.hash === 'string' &&
         typeof block.previousHash === 'string' &&
         typeof block.timestamp === 'number' &&
-        typeof block.data === 'string' &&
+        typeof block.data === 'object' &&
         typeof block.difficulty === 'number' &&
         typeof block.nonce === 'number'
     )

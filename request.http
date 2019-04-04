@@ -7,10 +7,6 @@ GET http://localhost:3000/blocks
 POST http://localhost:3000/blocks
 content-type: application/json
 
-{
-    "data": "Second block!!"
-}
-
 
 ###
 
@@ -20,3 +16,7 @@ content-type: application/json
 {
     "peer": "ws://localhost:4000"
 }
+
+###
+
+GET http://localhost:3000/me/balance
