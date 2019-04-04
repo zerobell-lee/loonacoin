@@ -78,4 +78,66 @@ const updateUTxOuts = (newTxs, uTxOutList) => {
     // 이전의 UtxOut을 비웠고, 새로운 UtxOut을 생성했으니, 전체 uTxOutList를 갱신해준다.
 
     return resultingUTxOuts;
+};
+
+const isTxInStructureValid = (txIn) => {
+    if (txIn === null) {
+        return false;
+    } else if (typeof txIn.signature !== 'string') {
+        return false;
+    } else if (typeof txIn.txOutId !== 'number') {
+        return false;
+    } else if (typeof txIn.txOutIndex !== 'number') {
+        return false;
+    } else {
+        return true;
+    }
+}
+
+const isAddressValid = (address) => {
+    if (address.length !== 130) {
+        return false;
+    } else if (address.match("^[a-fA-F0-9]+$") === null) {
+        return false;
+    } else if (!address.startsWith('04')) {
+        return false;
+    } else {
+        return true; 
+    }
+    // 왜 130이며, 04로 시작하는 이유가 따로 있는지?
+}
+
+const isTxOutStructureValid = (txOut) => {
+    if (txOut === null) {
+        return false;
+    } else if (typeof txOut.address !== 'string') {
+        return false;
+    } else if (!isAddressValid(txOut.address)) {
+        return false;
+    } else if (typeof txOut.amount !== 'number') {
+        return false;
+    } else {
+        true;
+    }
+}
+
+const isTxStructureValid = (tx) => {
+    if (typeof tx.id !== 'string') {
+        console.log('Tx ID is not valid.');
+        return false;
+    } else if (!(tx.txIns instanceof Array)) {
+        console.log('Tx inputs are not an array');
+        return false;
+    } else if (!tx.txIns.map(isTxInStructureValid).reduce((a, b) => a && b, true)) {
+        console.log('The structure of one of the txIn is not valid');
+        return false;
+    } else if (!(tx.txOuts instanceof Array)) {
+        console.log('The txOuts are not an array');
+        return false;
+    } else if (!tx.txOuts.map(isTxOutStructureValid).reduce((a, b) => a && b, true)) {
+        console.log('The structure of one of the txOut is not valid');
+        return false;
+    } else {
+        return true;
+    }
 }
