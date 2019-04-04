@@ -2,10 +2,12 @@ const express = require('express'),
 bodyParser = require('body-parser'),
 morgan = require('morgan'),
 Blockchain = require('./blockchain'),
-P2P = require('./p2p');
+P2P = require('./p2p'),
+Wallet = require('./wallet');
 
 const { getBlockChain, createNewBlock } = Blockchain;
 const { startP2Pserver, connectToPeers } = P2P;
+const { initWallet } = Wallet;
 
 const PORT = process.env.HTTP_PORT || 3000;
 
@@ -34,4 +36,5 @@ const server = app.listen(PORT, () => {
     console.log(`Loona Coin HTTP server running on ${PORT}`);
 });
 
+initWallet();
 startP2Pserver(server);
