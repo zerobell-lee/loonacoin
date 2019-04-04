@@ -1,5 +1,8 @@
 const CryptoJS = require('crypto-js'),
+    Wallet = require('./wallet'),
     hexToBinary = require('hex-to-binary');
+
+const { getBalance, getPublicFromWallet } = Wallet;
 
 const BLOCK_GENERATIONAL_INTERVAL = 10; // 초단위. 블록 채굴에 걸리는 시간.
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // 비트코인일 경우, 2016개
@@ -27,6 +30,8 @@ const genesisBlock = new Block(
 );
 
 let blockchain = [genesisBlock];
+
+let uTxOuts = [];
 
 const getNewestBlock = () => blockchain[blockchain.length - 1];
 const getTimeStamp = () => Math.round(new Date().getTime() / 1000);
@@ -185,6 +190,8 @@ const addBlockToChain = candidate => {
     }
 }
 
+const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
+
 module.exports = {
     getNewestBlock,
     getBlockChain,
@@ -192,5 +199,6 @@ module.exports = {
     isBlockStructureValid,
     isBlockValid,
     addBlockToChain,
-    replaceChain
+    replaceChain,
+    getAccountBalance
 }
