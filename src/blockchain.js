@@ -228,5 +228,6 @@ module.exports = {
     isBlockValid,
     addBlockToChain,
     replaceChain,
-    getAccountBalance
+    getAccountBalance,
+    sendTx
 }

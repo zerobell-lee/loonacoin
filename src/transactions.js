@@ -100,7 +100,7 @@ const isTxInStructureValid = (txIn) => {
         return false;
     } else if (typeof txIn.signature !== 'string') {
         return false;
-    } else if (typeof txIn.txOutId !== 'number') {
+    } else if (typeof txIn.txOutId !== 'string') {
         return false;
     } else if (typeof txIn.txOutIndex !== 'number') {
         return false;
@@ -126,13 +126,16 @@ const isTxOutStructureValid = (txOut) => {
     if (txOut === null) {
         return false;
     } else if (typeof txOut.address !== 'string') {
+        console.log('address not string');
         return false;
     } else if (!isAddressValid(txOut.address)) {
+        console.log('address invalid');
         return false;
     } else if (typeof txOut.amount !== 'number') {
+        console.log('amount not number');
         return false;
     } else {
-        true;
+        return true;
     }
 }
 
@@ -157,7 +160,7 @@ const isTxStructureValid = (tx) => {
     }
 }
 
-const validateTxIns = (txIn, tx, uTxOutList) => {
+const validateTxIn = (txIn, tx, uTxOutList) => {
     const wantedTxOut = uTxOutList.find(uTxOut => uTxOut.txOutId === txIn.txOutId && uTxOut.txOutIndex === txIn.txOutIndex);
 
     if (wantedTxOut === null) {
