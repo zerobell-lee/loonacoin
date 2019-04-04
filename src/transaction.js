@@ -4,6 +4,8 @@ const CryptoJS = require('crypto-js'),
 
 const ec = new EC('secp256k1');
 
+const COINBASE_AMOUNT = 50;
+
 class TxOut {
     constructor(address, amount) {
         this.address = address;
@@ -158,6 +160,11 @@ const validateTxIns = (txIn, tx, uTxOutList) => {
 const getAmountInTxIn = (txIn, uTxOutList) => findUTxOut(txIn.txOutId, txIn.txOutIndex, uTxOutList).amount
 
 const validateTx = (tx, uTxOutList) => {
+
+    if (!isTxStructureValid(tx)) {
+        return false;
+    }
+
     if (getTxId(tx) !== tx.id) {
         return false
     }
@@ -178,4 +185,20 @@ const validateTx = (tx, uTxOutList) => {
         return true;
     }
 
+}
+
+const validateCoinbaseTx = (tx, blockIndex) => {
+    if (getTxId(tx) !== tx.id) {
+        return false;
+    } else if (tx.txIns.length !== 1) {
+        return false;
+    } else if (tx.txIns[0].txOutIndex !== blockIndex) { //Coinbase 트랜잭션은 당연히 새로 생겨났으므로 OutIndex란게 없다. 이 경우, 블록 인덱스를 갖는다.
+        return false;
+    } else if (tx.txOuts.length !== 1) {
+        return false;
+    } else if (tx.txOuts[0].amount !== COINBASE_AMOUNT) {
+        return false;
+    } else {
+        return true;
+    }
 }
