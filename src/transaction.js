@@ -63,3 +63,19 @@ const signTxIn = (tx, txInIndex, privateKey, uTxOut) => {
     return signature;
 
 }
+
+const updateUTxOuts = (newTxs, uTxOutList) => {
+    const newUTxOuts = newTxs.map(tx => {
+        tx.txOuts.map((txOut, index) => {
+            return new UTxOut(tx.id, index, txOut.address, txOut.amount);
+        });
+    }).reduce((a, b) => a.concat(b), []); // Transaction 발생. 새로운 UTx가 최소 2개 생겨난다.
+
+    const spentTxOuts = newTxs.map(tx => tx.txIns).reduce((a, b) => a.concat(b), []).map(txIn => new UTXOut(txIn.txOutId, txIn.txOutIndex, '', 0));
+    // 이미 사용된 TxInput은 없애버려야 한다. 비워버리는 과정
+
+    const resultingUTxOuts = uTxOutList.filter(uTxO => !findUTxOut(uTxO.txOutId, uTxO.txOutIndex, spentTxOuts)).concat(newUTxOuts);
+    // 이전의 UtxOut을 비웠고, 새로운 UtxOut을 생성했으니, 전체 uTxOutList를 갱신해준다.
+
+    return resultingUTxOuts;
+}
