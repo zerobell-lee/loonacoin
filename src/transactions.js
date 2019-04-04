@@ -1,5 +1,6 @@
 const CryptoJS = require('crypto-js'),
     EC = require('elliptic').ec,
+    _ = require('lodash'),
     utils = require('./utils');
 
 const ec = new EC('secp256k1');
@@ -74,16 +75,21 @@ const getPublicKey = privateKey => {
 }
 
 const updateUTxOuts = (newTxs, uTxOutList) => {
-    const newUTxOuts = newTxs.map(tx => {
-        tx.txOuts.map((txOut, index) => {
-            return new UTxOut(tx.id, index, txOut.address, txOut.amount);
-        });
-    }).reduce((a, b) => a.concat(b), []); // Transaction 발생. 새로운 UTx가 최소 2개 생겨난다.
+    const newUTxOuts = newTxs
+        .map(tx => 
+            tx.txOuts.map(
+                (txOut, index) => new UTxOut(tx.id, index, txOut.address, txOut.amount)
+            )
+        )
+        .reduce((a, b) => a.concat(b), []); // Transaction 발생. 새로운 UTx가 최소 2개 생겨난다.
 
-    const spentTxOuts = newTxs.map(tx => tx.txIns).reduce((a, b) => a.concat(b), []).map(txIn => new UTXOut(txIn.txOutId, txIn.txOutIndex, '', 0));
+    const spentTxOuts = newTxs.map(tx => tx.txIns).reduce((a, b) => a.concat(b), []).map(txIn => new UTxOut(txIn.txOutId, txIn.txOutIndex, '', 0));
     // 이미 사용된 TxInput은 없애버려야 한다. 비워버리는 과정
 
-    const resultingUTxOuts = uTxOutList.filter(uTxO => !findUTxOut(uTxO.txOutId, uTxO.txOutIndex, spentTxOuts)).concat(newUTxOuts);
+    const resultingUTxOuts = uTxOutList
+        .filter(uTxO => !findUTxOut(uTxO.txOutId, uTxO.txOutIndex, spentTxOuts))
+        .concat(newUTxOuts);
+    
     // 이전의 UtxOut을 비웠고, 새로운 UtxOut을 생성했으니, 전체 uTxOutList를 갱신해준다.
 
     return resultingUTxOuts;
@@ -196,14 +202,19 @@ const validateTx = (tx, uTxOutList) => {
 
 const validateCoinbaseTx = (tx, blockIndex) => {
     if (getTxId(tx) !== tx.id) {
+        console.log('invalid tx id');
         return false;
     } else if (tx.txIns.length !== 1) {
+        console.log('tx ins length is not 1');
         return false;
     } else if (tx.txIns[0].txOutIndex !== blockIndex) { //Coinbase 트랜잭션은 당연히 새로 생겨났으므로 OutIndex란게 없다. 이 경우, 블록 인덱스를 갖는다.
+        console.log('txOutindex not equals blockIndex');
         return false;
     } else if (tx.txOuts.length !== 1) {
+        console.log('txs outs length is not 1');
         return false;
     } else if (tx.txOuts[0].amount !== COINBASE_AMOUNT) {
+        console.log('amount is illegal');
         return false;
     } else {
         return true;
@@ -214,12 +225,52 @@ const createCoinbaseTx = (address, blockIndex) => {
     const tx = new Transaction();
     const txIn = new TxIn();
     txIn.signature = '';
-    txIn.txOutId = blockIndex;
+    txIn.txOutId = '';
+    txIn.txOutIndex = blockIndex;
     tx.txIns = [txIn];
     tx.txOuts = [new TxOut(address, COINBASE_AMOUNT)];
     tx.id = getTxId(tx);
 
     return tx;
+};
+
+const hasDuplicates = (txIns) => {
+    const groups = _.countBy(txIns, txIn => txIn.txOutId + txIn.txOutIndex);
+
+    return _(groups).map(value => {
+        if (value > 1) {
+            console.log('Found duplicated transaction input');
+            return true;
+        } else {
+            return false;
+        }
+    }).includes(true);
+}
+
+const validateBlockTxs = (txs, uTxOutList, blockIndex) => {
+    const coinbaseTx = txs[0];
+    if (!validateCoinbaseTx(coinbaseTx, blockIndex)) {
+        console.log('Coinbase Tx is invalid');
+    }
+
+    const txIns = _(txs).map(tx => tx.txIns).flatten().value(); // ? 뭘까.
+
+    if (hasDuplicates(txIns)) {
+        console.log('Found duplicated txIns');
+        return false;
+    }
+
+    const nonCoinbaseTxs = txs.slice(1);
+
+    return nonCoinbaseTxs.map(tx => validateTx(tx, uTxOutList)).reduce((a, b) => a & b, true);
+
+}
+
+const processTxs = (txs, uTxOutList, blockIndex) => {
+    if (!validateBlockTxs(txs, uTxOutList, blockIndex)) {
+        return null;
+    } 
+    return updateUTxOuts(txs, uTxOutList);
 }
 
 module.exports = {
@@ -229,5 +280,6 @@ module.exports = {
     TxIn,
     Transaction,
     TxOut,
-    createCoinbaseTx
+    createCoinbaseTx,
+    processTxs
 };

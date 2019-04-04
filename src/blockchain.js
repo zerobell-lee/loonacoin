@@ -4,7 +4,7 @@ const CryptoJS = require('crypto-js'),
     hexToBinary = require('hex-to-binary');
 
 const { getBalance, getPublicFromWallet } = Wallet;
-const { createCoinbaseTx } = Transaction;
+const { createCoinbaseTx, processTxs } = Transaction;
 
 const BLOCK_GENERATIONAL_INTERVAL = 10; // 초단위. 블록 채굴에 걸리는 시간.
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // 비트코인일 경우, 2016개
@@ -191,6 +191,16 @@ const replaceChain = candidateChain => {
 
 const addBlockToChain = candidate => {
     if (isBlockValid(candidate, getNewestBlock())) {
+        const processedTxs = processTxs(candidate.data, uTxOuts, candidate.index);
+
+        if (processedTxs === null) {
+            console.long("Couldn't process txs");
+            return false;
+        } else {
+            blockchain.push(candidate);
+            uTxOuts = processedTxs;
+        }
+
         getBlockChain().push(candidate);
         return true;
     } else {
