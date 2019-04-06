@@ -7,7 +7,7 @@ const CryptoJS = require('crypto-js'),
 
 const { getBalance, getPublicFromWallet, createTx, getPrivateFromWallet } = Wallet;
 const { createCoinbaseTx, processTxs } = Transaction;
-const { addToMempool} = Mempool;
+const { addToMempool, getMempool } = Mempool;
 
 const BLOCK_GENERATIONAL_INTERVAL = 10; // 초단위. 블록 채굴에 걸리는 시간.
 const DIFFICULTY_ADJUSTMENT_INTERVAL = 10; // 비트코인일 경우, 2016개
@@ -48,7 +48,7 @@ const createHash = (index, previousHash, timestamp, data, difficulty, nonce) => 
 
 const createNewBlock = () => {
     const coinbaseTx = createCoinbaseTx(getPublicFromWallet(), getNewestBlock().index + 1);
-    const blockData = [coinbaseTx];
+    const blockData = [coinbaseTx].concat(getMempool());
     return createNewRawBlock(blockData);
 }
 
@@ -218,6 +218,7 @@ const getAccountBalance = () => getBalance(getPublicFromWallet(), uTxOuts);
 const sendTx = (address, amount) => {
     const tx = createTx(address, amount, getPrivateFromWallet(), getUTxOutList());
     addToMempool(tx, getUTxOutList());
+    return tx;
 }
 
 module.exports = {
